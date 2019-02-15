@@ -178,13 +178,13 @@ class Pipeline:
             # Execute the command
             elif c.get_stage() == EXECUTE_INSTRUCTION:
                 response = execute(c.get_command(), registers)
+                self.add_print(c.get_stage(), c.get_command()['instruction'])
                 print('response: ', response)
-                print(c.get_command()['instruction'])
                 c.next_stage()
 
             # Command end, remove them.
             else:
-                # c.print()
+                self.add_print(c.get_stage(), c.get_command()['instruction'])
                 self.pipeline.pop(0)
 
         self.print_pipeline()
@@ -236,7 +236,7 @@ class Interpreter:
             self.pipeline.add_command(self.instructions.get_instruction(self.line))
 
         tag = self.pipeline.exec_pipeline(self.registers)
-        print('\n\n')
+        print()
         print('-' * 42)
         self.registers.print_register()
         print('-' * 42)
