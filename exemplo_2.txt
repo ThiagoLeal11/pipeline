@@ -1,18 +1,17 @@
 _somatorio:
-	pushl	%ebp
-	movl	%esp, %ebp
-	subl	$24, %esp
-	movl	$0, -12(%ebp)
-	movl	$0, -16(%ebp)
-	jmp	L2
+	movl	ebp, esp // ebp <- valor de esp (entrada do somatorio) (inicialize o registrador esp com o valor que deseja)
+	movl	temp, 0 // variavel aux temp inicializa com 0
+	movl	temp2, 0 // variavel aux temp2 inicializa com 0
+	jmp	L2 // pula para label L2
 L3:
-	movl	-16(%ebp), %eax
-	addl	%eax, -12(%ebp)
-	incl	-16(%ebp)
+	movl	eax, temp2 //eax <- temp2
+	addl	temp, eax // temp <- eax
+	incl	temp2 // temp2 = temp2 + 1
+	jmp	L2 // pula para L2
 L2:
-	movl	-16(%ebp), %eax
-	cmpl	8(%ebp), %eax
-	jl	L3
-	movl	-12(%ebp), %eax
-	leave
-	ret
+	movl	eax, temp2 //eax <- temp2
+	cmpl	eax, ebp // eax <- ebp
+	jle	L3 // pula para L3 se eax <=(menor ou igual) ebp
+	movl	eax, temp // eax <- temp
+	leave // prepara para finalizar
+	ret // finaliza o programa
