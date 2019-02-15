@@ -10,7 +10,7 @@ WRITE_OPERANDS = 5
 
 class Register:
     def __init__(self, esp):
-        self.registers = {'ebp': 0, 'eax': 0, 'temp': 0, 'temp2': 0, 'esp': esp}
+        self.registers = {'ebp': 0, 'eax': 0, 'temp': 0, 'temp2': 0, 'esp': esp, 'cmp': 0}
 
     def get_value(self, register):
         return self.registers[register]
@@ -20,6 +20,12 @@ class Register:
             self.registers[register1] = register2
         else:
             self.registers[register1] = self.registers[register2]
+
+    def cmpl(self, register1, register2):
+        if register2.isdigit():
+            self.registers['cmp'] = register2 - int(self.registers[register1])
+        else:
+            self.registers['cmp'] = int(self.registers[register2]) - int(self.registers[register1])
 
     def addl(self, register1, register2):
         if register2.isdigit():
@@ -63,6 +69,7 @@ class Instructions:
 
         # Get the instruction object.
         instruction = self.new_instruction(line[0], line[1:], self.id)
+        print(instruction)
         self.id += 1
 
         # Save instruction on list.
@@ -89,6 +96,14 @@ def execute(command, registers):
     elif command['instruction'] == 'incl':
         registers.incl(command['args'][0])
         return None
+    elif command['instruction'] == 'cmpl':
+        registers.cmpl(command['args'][0], command['args'][1])
+        return None
+    elif command['instruction'] == 'jle':
+        if registers.get_value('cmp') >= 0:
+            return command['args'][0]
+    elif command['instruction'] == 'ret':
+        return 'Exit'
 
     return None
 
@@ -199,9 +214,16 @@ class Pipeline:
         return response
 
     def clean_pipeline(self):
+        toBeRemoved = []
         # Remove any command that not execute yet
-        for l in range(FETCH_INSTRUCTION, WRITE_OPERANDS):
-            self.pipeline.pop(1)
+        for c in self.pipeline:
+            if c.get_stage() in range(FETCH_INSTRUCTION, WRITE_OPERANDS):
+                print(c.get_command())
+                toBeRemoved.append(c)
+        for x in range(0, len(toBeRemoved)):
+            self.pipeline.remove(toBeRemoved[x])
+
+
 
 
 class Interpreter:
@@ -252,6 +274,9 @@ class Interpreter:
         if tag is None:
             self.line += 1
 
+        elif tag is 'Exit':
+            return False
+
         # Jump for the tag
         else:
             # Clean the pipeline
@@ -261,34 +286,15 @@ class Interpreter:
             self.line = self.tags.get_line(tag)
             print('new line', self.line)
 
+        return True
+
 
 esp = int(input("Enter a value to esp: "))
 
 # Some test code
 i = Interpreter(file.read(), esp)
 
-
-
 i.parse_code()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
-i.run_cycle()
+run = True
+while run:
+    run = i.run_cycle()
