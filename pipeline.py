@@ -41,15 +41,16 @@ class Register:
 
 class Instructions:
     instructions = []
+    id = 0
 
     def add_instruction(self, instruction):
         self.instructions.append(instruction)
 
     @staticmethod
-    def new_instruction(instruction, args):
+    def new_instruction(instruction, args, id):
 
         # Return the instruction object.
-        return {'instruction': instruction, 'args': args}
+        return {'instruction': instruction, 'args': args, 'id': id}
 
     def read_instruction(self, line):
         # Remove comments
@@ -61,7 +62,8 @@ class Instructions:
         line = line.split()
 
         # Get the instruction object.
-        instruction = self.new_instruction(line[0], line[1:])
+        instruction = self.new_instruction(line[0], line[1:], self.id)
+        self.id += 1
 
         # Save instruction on list.
         self.add_instruction(instruction)
@@ -166,26 +168,31 @@ class Pipeline:
         for x in range(0,6):
             self.matrix[-1].append('')
 
+        remove = False
+
         # Iterate over pipeline commands and change her states
         for c in self.pipeline:
 
             # Just go to the next step.
             if c.get_stage() < EXECUTE_INSTRUCTION:
                 # c.print()
-                self.add_print(c.get_stage(), c.get_command()['instruction'])
+                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
                 c.next_stage()
 
             # Execute the command
             elif c.get_stage() == EXECUTE_INSTRUCTION:
                 response = execute(c.get_command(), registers)
-                self.add_print(c.get_stage(), c.get_command()['instruction'])
+                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
                 print('response: ', response)
                 c.next_stage()
 
             # Command end, remove them.
             else:
-                self.add_print(c.get_stage(), c.get_command()['instruction'])
-                self.pipeline.pop(0)
+                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
+                remove = True
+
+        if remove:
+            self.pipeline.pop(0)
 
         self.print_pipeline()
 
