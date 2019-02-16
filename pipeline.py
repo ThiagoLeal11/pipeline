@@ -69,7 +69,6 @@ class Instructions:
 
         # Get the instruction object.
         instruction = self.new_instruction(line[0], line[1:], self.id)
-        print(instruction)
         self.id += 1
 
         # Save instruction on list.
@@ -293,8 +292,9 @@ esp = int(input("Enter a value to esp: "))
 
 # Some test code
 i = Interpreter(file.read(), esp)
-
 i.parse_code()
+
 run = True
+
 while run:
     run = i.run_cycle()
