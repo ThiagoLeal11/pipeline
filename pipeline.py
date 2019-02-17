@@ -1,5 +1,3 @@
-file = open('exemplo_2.txt', 'r+')
-
 # Pipeline stages constants
 FETCH_INSTRUCTION = 0
 DECODE_INSTRUCTION = 1
@@ -8,41 +6,50 @@ FETCH_OPERANDS = 3
 EXECUTE_INSTRUCTION = 4
 WRITE_OPERANDS = 5
 
+
 class Register:
     def __init__(self, esp):
         self.registers = {'ebp': 0, 'eax': 0, 'temp': 0, 'temp2': 0, 'esp': esp, 'cmp': 0}
 
+    # Get the value from a register.
     def get_value(self, register):
         return self.registers[register]
 
+    # Put a number on register1 or copy the value from register2.
     def movl(self, register1, register2):
         if register2.isdigit():
             self.registers[register1] = register2
         else:
             self.registers[register1] = self.registers[register2]
 
+    # Subtract
     def cmpl(self, register1, register2):
         if register2.isdigit():
             self.registers['cmp'] = register2 - int(self.registers[register1])
         else:
             self.registers['cmp'] = int(self.registers[register2]) - int(self.registers[register1])
 
+    # Add to the value of register1 any number or the value of register2.
     def addl(self, register1, register2):
         if register2.isdigit():
             self.registers[register1] += int(register2)
         else:
             self.registers[register1] = int(self.registers[register1]) + int(self.registers[register2])
 
+    # Increases the value of the register1
     def incl(self, register):
         self.registers[register] = int(self.registers[register]) + 1
 
     def print_register(self):
+        print('\n+', '-' * 44, '+', sep='')
+        print('|', end='')
         for x in self.registers:
             print('%7s' % x, end='')
-        print()
+        print('  |\n|', end='')
         for x in self.registers:
             print('%7s' % self.registers.get(x), end='')
-        print()
+        print('  |')
+        print('+', '-' * 44, '+\n', sep='')
 
 
 class Instructions:
@@ -81,26 +88,30 @@ class Instructions:
         return len(self.instructions)
 
 
-
-
 def execute(command, registers):
-    if command['instruction'] == 'jmp':  # Unconditional jump
+    if command['instruction'] == 'jmp':
         return command['args'][0]
+
     elif command['instruction'] == 'movl':
         registers.movl(command['args'][0], command['args'][1])
         return None
+
     elif command['instruction'] == 'addl':
         registers.addl(command['args'][0], command['args'][1])
         return None
+
     elif command['instruction'] == 'incl':
         registers.incl(command['args'][0])
         return None
+
     elif command['instruction'] == 'cmpl':
         registers.cmpl(command['args'][0], command['args'][1])
         return None
+
     elif command['instruction'] == 'jle':
         if registers.get_value('cmp') >= 0:
             return command['args'][0]
+
     elif command['instruction'] == 'ret':
         return 'Exit'
 
@@ -127,6 +138,7 @@ class Tags:
         return {'tag': tag, 'line': line}
 
     def get_line(self, tag):
+        # Search the line number by given a tag name.
         for t in self.tags:
             if t['tag'] == tag:
                 return t['line']
@@ -154,17 +166,13 @@ class Command:
 class Pipeline:
     def __init__(self):
         self.pipeline = []
-        self.matrix = []
-        self.matrix.append([])
-        self.matrix[0].append('FI')
-        self.matrix[0].append('DI')
-        self.matrix[0].append('CO')
-        self.matrix[0].append('FO')
-        self.matrix[0].append('EI')
-        self.matrix[0].append('WO')
+        self.matrix = [
+            ['FI', 'DI', 'CO', 'FO', 'EI', 'WO',],
+        ]
 
     def print_pipeline(self):
         for x in self.matrix:
+            print(' ', end='')
             for y in x:
                 print('%7s' % y, end='')
             print()
@@ -177,52 +185,58 @@ class Pipeline:
 
     def exec_pipeline(self, registers):
         response = None
+        remove = False
 
+        # Add a new blank line to print matrix.
         self.matrix.append([])
         for x in range(0,6):
             self.matrix[-1].append('')
 
-        remove = False
-
-        # Iterate over pipeline commands and change her states
+        # Iterate over pipeline commands and change it states
         for c in self.pipeline:
 
             # Just go to the next step.
             if c.get_stage() < EXECUTE_INSTRUCTION:
-                # c.print()
-                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
+                # Print line stage.
+                self.add_print(c.get_stage(), str(c.get_command()['id']))
+
+                # Go to next stage.
                 c.next_stage()
 
             # Execute the command
             elif c.get_stage() == EXECUTE_INSTRUCTION:
+                # Update registers and get new line on a jump.
                 response = execute(c.get_command(), registers)
-                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
-                print('response: ', response)
+
+                # Print line stage.
+                self.add_print(c.get_stage(), str(c.get_command()['id']))
+
+                # Go to next stage.
                 c.next_stage()
 
             # Command end, remove them.
             else:
-                self.add_print(c.get_stage(), 'I_' + str(c.get_command()['id']))
+                # Print line stage.
+                self.add_print(c.get_stage(), str(c.get_command()['id']))
+
+                # Remove line from pipeline.
                 remove = True
 
         if remove:
             self.pipeline.pop(0)
 
-        self.print_pipeline()
+        # self.print_pipeline()
 
         return response
 
     def clean_pipeline(self):
-        toBeRemoved = []
+        to_be_removed = []
         # Remove any command that not execute yet
         for c in self.pipeline:
             if c.get_stage() in range(FETCH_INSTRUCTION, WRITE_OPERANDS):
-                print(c.get_command())
-                toBeRemoved.append(c)
-        for x in range(0, len(toBeRemoved)):
-            self.pipeline.remove(toBeRemoved[x])
-
-
+                to_be_removed.append(c)
+        for x in range(0, len(to_be_removed)):
+            self.pipeline.remove(to_be_removed[x])
 
 
 class Interpreter:
@@ -258,21 +272,29 @@ class Interpreter:
         else:
             self.tags.add_tag(line, self.line)
 
+    def print_pipeline(self, response):
+        # Print pipeline.
+        self.pipeline.print_pipeline()
+
+        # Print register header
+        self.registers.print_register()
+
     def run_cycle(self):
         # Add new instruction to pipeline
         if self.line < self.max_line:
             self.pipeline.add_command(self.instructions.get_instruction(self.line))
 
+        # Run a clock on pipeline.
         tag = self.pipeline.exec_pipeline(self.registers)
-        print()
-        print('-' * 42)
-        self.registers.print_register()
-        print('-' * 42)
-        print('\n')
 
+        # Print the current stage of the pipeline.
+        self.print_pipeline(tag)
+
+        # No jump, go to the next line.
         if tag is None:
             self.line += 1
 
+        # Program ended.
         elif tag is 'Exit':
             return False
 
@@ -283,18 +305,45 @@ class Interpreter:
 
             # Go to the new line
             self.line = self.tags.get_line(tag)
-            print('new line', self.line)
+            print('==> Go to line:', self.line)
 
         return True
 
 
-esp = int(input("Enter a value to esp: "))
+def get_int_number(text):
+    is_valid = False
+    answer = ''
 
-# Some test code
-i = Interpreter(file.read(), esp)
-i.parse_code()
+    while not is_valid:
+        answer = input(text)
+        try:
+            answer = int(answer)
+            is_valid = True
+        except:
+            print('Error: not integer input!\n')
 
-run = True
+    return answer
 
-while run:
-    run = i.run_cycle()
+
+if __name__ == '__main__':
+    # Get the file.
+    filename = input('Enter with the file name: ')
+    file = None
+    try:
+        file = open(filename, 'r+')
+    except FileNotFoundError:
+        print('The file can\'t be reached.')
+        exit()
+
+    # Get the initial value.
+    esp = get_int_number("Enter a value to esp: ")
+
+    # Compile the code.
+    i = Interpreter(file.read(), esp)
+    i.parse_code()
+
+    # Run interactively.
+    run = True
+    while run:
+        input('\nPress enter to next step...\n\n')
+        run = i.run_cycle()
